@@ -35,10 +35,10 @@ namespace SmartWeakEvent
 			TestCollectingListener();
 			TestAttachAnonymousMethod();
 
-			BenchmarkRunner.Run(typeof(Program).Assembly);
-
 			Console.Write("Press any key to continue . . . ");
 			Console.ReadKey(true);
+
+			BenchmarkRunner.Run(typeof(Program).Assembly);
 		}
 
 		class EventArgs1 : EventArgs { public float Num = 1; }
@@ -71,6 +71,7 @@ namespace SmartWeakEvent
 		static void TestCollectingListener()
 		{
 			Console.WriteLine("TestCollectingListener");
+			Console.WriteLine("The event should be raised once, then the listener should get garbage collected.");
 			{
 				SmartEventSource source = new SmartEventSource();
 				EventListener r = new EventListener(source);
@@ -114,7 +115,7 @@ namespace SmartWeakEvent
 			}
 			catch (Exception ex)
 			{
-				Console.WriteLine(ex.Message);
+				Console.WriteLine("Got expected exception: " + ex.Message);
 			}
 			Console.WriteLine();
 		}
