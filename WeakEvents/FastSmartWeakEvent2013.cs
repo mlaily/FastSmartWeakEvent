@@ -37,12 +37,10 @@ namespace SmartWeakEvent2013
 	/// See http://www.codeproject.com/Articles/29922/Weak-Events-in-C
 	/// </summary>
 	/// <typeparam name="T">The delegate type of the event handlers.</typeparam>
-	public sealed class FastSmartWeakEvent<T> where T : class
+	public sealed class FastSmartWeakEvent<T> where T : class, Delegate
 	{
 		static FastSmartWeakEvent()
 		{
-			if (!typeof(T).IsSubclassOf(typeof(Delegate)))
-				throw new ArgumentException("T must be a delegate type");
 			MethodInfo invoke = typeof(T).GetMethod("Invoke");
 			if (invoke == null)
 				throw new ArgumentException("T must be a delegate type");
@@ -124,18 +122,17 @@ namespace SmartWeakEvent2013
 		public void Add(T eh)
 		{
 			if (eh != null) {
-				Delegate d = (Delegate)(object)eh;
 				RemoveDeadEntries();
-				object targetInstance = d.Target;
+				object targetInstance = eh.Target;
 				if (targetInstance != null) {
-					MethodInfo targetMethod = d.Method;
+					MethodInfo targetMethod = eh.Method;
 					var wd = new HandlerEntry(this, targetInstance, targetMethod);
 					var dynamicMethod = GetInvoker(targetMethod);
 					wd.WrappingDelegate = dynamicMethod.CreateDelegate(typeof(T), wd);
 					AddToRaiseDelegate(wd.WrappingDelegate);
 				} else {
 					// delegate to static method: use directly without wrapping delegate
-					AddToRaiseDelegate(d);
+					AddToRaiseDelegate(eh);
 				}
 			}
 		}
@@ -150,8 +147,7 @@ namespace SmartWeakEvent2013
 			if (raiseDelegate == null)
 				return;
 			foreach (var d in raiseDelegate.GetInvocationList()) {
-				var wd = d.Target as HandlerEntry;
-				if (wd != null && wd.TargetInstance == null) {
+				if (d.Target is HandlerEntry wd && wd.TargetInstance == null) {
 					RemoveFromRaiseDelegate(d);
 				}
 			}
@@ -161,14 +157,13 @@ namespace SmartWeakEvent2013
 		{
 			if (eh == null)
 				return;
-			Delegate d = (Delegate)(object)eh;
-			object targetInstance = d.Target;
+			object targetInstance = eh.Target;
 			if (targetInstance == null) {
 				// delegate to static method: use directly without wrapping delegate
-				RemoveFromRaiseDelegate(d);
+				RemoveFromRaiseDelegate(eh);
 				return;
 			}
-			MethodInfo targetMethod = d.Method;
+			MethodInfo targetMethod = eh.Method;
 			// Find+Remove the last copy of a delegate pointing to targetInstance/targetMethod
 			Delegate raiseDelegate = GetRaiseDelegateInternal();
 			if (raiseDelegate == null)
@@ -198,7 +193,7 @@ namespace SmartWeakEvent2013
 		/// </summary>
 		public T GetRaiseDelegate()
 		{
-			return (T)(object)GetRaiseDelegateInternal();
+			return (T)GetRaiseDelegateInternal();
 		}
 		
 		/// <summary>
@@ -209,8 +204,8 @@ namespace SmartWeakEvent2013
 		}
 		
 		#region Code Generation
-		static readonly MethodInfo getTargetMethod = typeof(HandlerEntry).GetMethod("get_TargetInstance");
-		static readonly MethodInfo calledWhileDeadMethod = typeof(HandlerEntry).GetMethod("CalledWhenDead");
+		static readonly MethodInfo getTargetMethod = typeof(HandlerEntry).GetMethod("get_" + nameof(HandlerEntry.TargetInstance));
+		static readonly MethodInfo calledWhileDeadMethod = typeof(HandlerEntry).GetMethod(nameof(HandlerEntry.CalledWhenDead));
 		
 		static readonly Dictionary<MethodInfo, DynamicMethod> invokerMethods = new Dictionary<MethodInfo, DynamicMethod>();
 		
