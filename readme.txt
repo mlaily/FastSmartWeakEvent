@@ -1,0 +1,1 @@
+source: https://www.codeproject.com/Articles/29922/Weak-Events-in-C
