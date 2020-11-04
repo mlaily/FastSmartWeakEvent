@@ -127,6 +127,8 @@ namespace SmartWeakEvent
 		SmartEventSource smartSource;
 		FastSmartEventSource fastSmartSource;
 
+		WeakEvent.WeakEventSource<EventArgs> thomasSource;
+
 		[GlobalSetup]
 		public void Setup()
 		{
@@ -141,6 +143,10 @@ namespace SmartWeakEvent
 			fastSmartSource = new FastSmartEventSource();
 			fastSmartSource.Event += StaticOnEvent;
 			fastSmartSource.Event += OnEvent;
+
+			thomasSource = new WeakEvent.WeakEventSource<EventArgs>();
+			thomasSource.Subscribe(StaticOnEvent);
+			thomasSource.Subscribe(OnEvent);
 		}
 
 		[GlobalCleanup]
@@ -157,6 +163,10 @@ namespace SmartWeakEvent
 			fastSmartSource.Event -= StaticOnEvent;
 			fastSmartSource.Event -= OnEvent;
 			fastSmartSource = null;
+
+			thomasSource.Unsubscribe(StaticOnEvent);
+			thomasSource.Unsubscribe(OnEvent);
+			thomasSource = null;
 		}
 
 		[Benchmark(Description = "Normal (strong) event", Baseline = true)]
@@ -175,6 +185,12 @@ namespace SmartWeakEvent
 		public void FastSmartWeakEvent()
 		{
 			fastSmartSource.RaiseEvent();
+		}
+
+		[Benchmark(Description = "Thomas weak event")]
+		public void ThomasWeakEvent()
+		{
+			thomasSource.Raise(this, EventArgs.Empty);
 		}
 
 		public static void StaticOnEvent(object sender, EventArgs e)
