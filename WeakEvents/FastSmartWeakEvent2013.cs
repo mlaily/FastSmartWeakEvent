@@ -172,8 +172,7 @@ namespace SmartWeakEvent2013
 			Delegate[] invocationList = raiseDelegate.GetInvocationList();
 			for (int i = invocationList.Length - 1; i >= 0; i--) {
 				var wrappingDelegate = invocationList[i];
-				var weakDelegate = wrappingDelegate.Target as HandlerEntry;
-				if (weakDelegate == null)
+				if (!(wrappingDelegate.Target is HandlerEntry weakDelegate))
 					continue;
 				object target = weakDelegate.TargetInstance;
 				if (target == null) {
@@ -267,15 +266,13 @@ namespace SmartWeakEvent2013
 		public static void Raise(this FastSmartWeakEvent<EventHandler> ev, object sender, EventArgs e)
 		{
 			var d = ev.GetRaiseDelegate();
-			if (d != null)
-				d(sender, e);
+			d?.Invoke(sender, e);
 		}
 		
 		public static void Raise<T>(this FastSmartWeakEvent<EventHandler<T>> ev, object sender, T e) where T : EventArgs
 		{
 			var d = ev.GetRaiseDelegate();
-			if (d != null)
-				d(sender, e);
+			d?.Invoke(sender, e);
 		}
 	}
 }

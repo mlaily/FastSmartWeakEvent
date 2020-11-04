@@ -136,8 +136,7 @@ namespace SmartWeakEvent
 		internal static ForwarderDelegate GetForwarder(MethodInfo method)
 		{
 			lock (forwarders) {
-				ForwarderDelegate d;
-				if (forwarders.TryGetValue(method, out d))
+				if (forwarders.TryGetValue(method, out var d))
 					return d;
 			}
 			
