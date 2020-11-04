@@ -21,8 +21,9 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 
+using BenchmarkDotNet.Attributes;
+using BenchmarkDotNet.Running;
 using System;
-using System.Diagnostics;
 
 namespace SmartWeakEvent
 {
@@ -33,20 +34,22 @@ namespace SmartWeakEvent
 			TypeSafetyProblem();
 			TestCollectingListener();
 			TestAttachAnonymousMethod();
-			PerformanceTest();
-			
+
+			BenchmarkRunner.Run(typeof(Program).Assembly);
+
 			Console.Write("Press any key to continue . . . ");
 			Console.ReadKey(true);
 		}
-		
+
 		class EventArgs1 : EventArgs { public float Num = 1; }
 		class EventArgs2 : EventArgs { public int Num = 0; }
-		
+
 		static void TypeSafetyProblem()
 		{
 			Console.WriteLine("TypeSafetyProblem");
 			Console.Write("This should cause an exception: ");
-			try {
+			try
+			{
 				FastSmartWeakEvent<EventHandler<EventArgs2>> fswe = new FastSmartWeakEvent<EventHandler<EventArgs2>>();
 				void eh(object sender, EventArgs2 e) => Console.WriteLine(e.Num.ToString());
 				fswe.Add(eh);
@@ -55,18 +58,19 @@ namespace SmartWeakEvent
 				// performance, but that would blow a hole into the .NET type system if anyone calls Raise with
 				// an EventArgs instance not compatible with the delegate signature.
 				fswe.Raise(null, new EventArgs1());
-				
+
 				Console.WriteLine("No exception -> we blew a hole into the .NET type system!");
-			} catch (InvalidCastException) {
+			}
+			catch (InvalidCastException)
+			{
 				Console.WriteLine("Got exception as expected!");
 			}
 			Console.WriteLine();
 		}
-		
+
 		static void TestCollectingListener()
 		{
 			Console.WriteLine("TestCollectingListener");
-			// test that the
 			{
 				SmartEventSource source = new SmartEventSource();
 				EventListener r = new EventListener(source);
@@ -78,9 +82,9 @@ namespace SmartWeakEvent
 				GC.WaitForPendingFinalizers();
 				source.RaiseEvent();
 			}
-			
+
 			Console.WriteLine("With fast:");
-			
+
 			{
 				FastSmartEventSource source = new FastSmartEventSource();
 				EventListener r = new EventListener(source);
@@ -94,95 +98,100 @@ namespace SmartWeakEvent
 			}
 			Console.WriteLine();
 		}
-		
+
 		static void TestAttachAnonymousMethod()
 		{
 			Console.WriteLine("TestAttachAnonymousMethod");
-			try {
+			try
+			{
 				FastSmartEventSource source = new FastSmartEventSource();
 				string text = "Hi";
-				source.Event += delegate {
+				source.Event += delegate
+				{
 					Console.WriteLine(text);
 				};
 				Console.WriteLine("Attaching an anonymous method that captures local variables should result in an exception!");
-			} catch (Exception ex) {
+			}
+			catch (Exception ex)
+			{
 				Console.WriteLine(ex.Message);
 			}
 			Console.WriteLine();
 		}
-		
-		static void PerformanceTest()
+	}
+
+	[MemoryDiagnoser]
+	public class WeakEventBenchmark
+	{
+		NormalEventSource normalSource;
+		SmartEventSource smartSource;
+		FastSmartEventSource fastSmartSource;
+
+		[GlobalSetup]
+		public void Setup()
 		{
-			SpeedTest(
-				"Normal (strong) event",
-				5000000,
-				callCount => {
-					Program p = new Program();
-					NormalEventSource source = new NormalEventSource();
-					source.Event += StaticOnEvent;
-					source.Event += p.OnEvent;
-					for (int i = 0; i < callCount; i++) {
-						source.RaiseEvent();
-					}
-					GC.KeepAlive(p);
-				});
-			
-			SpeedTest(
-				"Smart weak event",
-				200000,
-				callCount => {
-					Program p = new Program();
-					SmartEventSource source = new SmartEventSource();
-					source.Event += StaticOnEvent;
-					source.Event += p.OnEvent;
-					for (int i = 0; i < callCount; i++) {
-						source.RaiseEvent();
-					}
-					GC.KeepAlive(p);
-				});
-			
-			SpeedTest(
-				"Fast smart weak event",
-				5000000,
-				callCount => {
-					Program p = new Program();
-					FastSmartEventSource source = new FastSmartEventSource();
-					source.Event += StaticOnEvent;
-					source.Event += p.OnEvent;
-					for (int i = 0; i < callCount; i++) {
-						source.RaiseEvent();
-					}
-					GC.KeepAlive(p);
-				});
+			normalSource = new NormalEventSource();
+			normalSource.Event += StaticOnEvent;
+			normalSource.Event += OnEvent;
+
+			smartSource = new SmartEventSource();
+			smartSource.Event += StaticOnEvent;
+			smartSource.Event += OnEvent;
+
+			fastSmartSource = new FastSmartEventSource();
+			fastSmartSource.Event += StaticOnEvent;
+			fastSmartSource.Event += OnEvent;
 		}
-		
-		static void SpeedTest(string text, int callCount, Action<int> a)
+
+		[GlobalCleanup]
+		public void Cleanup()
 		{
-			Console.Write(text + "...");
-			Stopwatch w = new Stopwatch();
-			w.Start();
-			a(callCount);
-			w.Stop();
-			Console.WriteLine((callCount / w.Elapsed.TotalSeconds).ToString("f0").PadLeft(35 - text.Length) + " calls per second");
+			normalSource.Event -= StaticOnEvent;
+			normalSource.Event -= OnEvent;
+			normalSource = null;
+
+			smartSource.Event -= StaticOnEvent;
+			smartSource.Event -= OnEvent;
+			smartSource = null;
+
+			fastSmartSource.Event -= StaticOnEvent;
+			fastSmartSource.Event -= OnEvent;
+			fastSmartSource = null;
 		}
-		
-		static void StaticOnEvent(object sender, EventArgs e)
+
+		[Benchmark(Description = "Normal (strong) event", Baseline = true)]
+		public void NormalEvent()
 		{
-			
+			normalSource.RaiseEvent();
 		}
-		
-		void OnEvent(object sender, EventArgs e)
+
+		[Benchmark(Description = "Smart weak event")]
+		public void SmartWeakEvent()
+		{
+			smartSource.RaiseEvent();
+		}
+
+		[Benchmark(Description = "Fast smart weak event")]
+		public void FastSmartWeakEvent()
+		{
+			fastSmartSource.RaiseEvent();
+		}
+
+		public static void StaticOnEvent(object sender, EventArgs e)
 		{
 		}
-		
+
+		public void OnEvent(object sender, EventArgs e)
+		{
+		}
+
 		class NormalEventSource
 		{
 			public event EventHandler Event;
-			
+
 			public void RaiseEvent()
 			{
-				if (Event != null)
-					Event(this, EventArgs.Empty);
+				Event?.Invoke(this, EventArgs.Empty);
 			}
 		}
 	}
