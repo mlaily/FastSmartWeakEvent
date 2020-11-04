@@ -107,8 +107,13 @@ namespace SmartWeakEvent
 				}
 			}
 		}
-		
-		public void Raise(object sender, EventArgs e)
+
+		/// <summary>
+		/// Raises the weak event on alive handlers.
+		/// This method is unsafe in the sense that it will throw if <paramref name="e"/> is not an instance of the correct type.
+		/// Prefer using the <see cref="FastSmartWeakEventRaiseExtensions.Raise"/> extension method...
+		/// </summary>
+		internal void UnsafeRaise(object sender, EventArgs e)
 		{
 			bool needsCleanup = false;
 			foreach (EventEntry ee in eventEntries.ToArray()) {
@@ -182,6 +187,22 @@ namespace SmartWeakEvent
 				forwarders[method] = fd;
 			}
 			return fd;
+		}
+	}
+
+	/// <summary>
+	/// Strongly-typed raise methods for FastSmartWeakEvent
+	/// </summary>
+	public static class FastSmartWeakEventRaiseExtensions
+	{
+		public static void Raise(this FastSmartWeakEvent<EventHandler> ev, object sender, EventArgs e)
+		{
+			ev.UnsafeRaise(sender, e);
+		}
+
+		public static void Raise<T>(this FastSmartWeakEvent<EventHandler<T>> ev, object sender, T e) where T : EventArgs
+		{
+			ev.UnsafeRaise(sender, e);
 		}
 	}
 }

@@ -44,22 +44,39 @@ namespace SmartWeakEvent
 			_event.Raise(this, EventArgs.Empty);
 		}
 	}
-	
+
 	public class FastSmartEventSource : IEventSource
 	{
 		FastSmartWeakEvent<EventHandler> _event = new FastSmartWeakEvent<EventHandler>();
-		
-		public event EventHandler Event {
+
+		public event EventHandler Event
+		{
 			add { _event.Add(value); }
 			remove { _event.Remove(value); }
 		}
-		
+
 		public void RaiseEvent()
 		{
 			_event.Raise(this, EventArgs.Empty);
 		}
 	}
-	
+
+	public class FastSmartEventSource2013 : IEventSource
+	{
+		SmartWeakEvent2013.FastSmartWeakEvent<EventHandler> _event = new SmartWeakEvent2013.FastSmartWeakEvent<EventHandler>();
+
+		public event EventHandler Event
+		{
+			add { _event.Add(value); }
+			remove { _event.Remove(value); }
+		}
+
+		public void RaiseEvent()
+		{
+			SmartWeakEvent2013.FastSmartWeakEventRaiseExtensions.Raise(_event, this, EventArgs.Empty);
+		}
+	}
+
 	public class EventListener
 	{
 		IEventSource source;

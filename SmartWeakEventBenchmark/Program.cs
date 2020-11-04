@@ -31,41 +31,14 @@ namespace SmartWeakEvent
 	{
 		public static void Main(string[] args)
 		{
-			TypeSafetyProblem();
 			TestCollectingListener();
 			TestAttachAnonymousMethod();
+			TestAttachAnonymousMethod2013();
 
 			Console.Write("Press any key to continue . . . ");
 			Console.ReadKey(true);
 
 			BenchmarkRunner.Run(typeof(Program).Assembly);
-		}
-
-		class EventArgs1 : EventArgs { public float Num = 1; }
-		class EventArgs2 : EventArgs { public int Num = 0; }
-
-		static void TypeSafetyProblem()
-		{
-			Console.WriteLine("TypeSafetyProblem");
-			Console.Write("This should cause an exception: ");
-			try
-			{
-				FastSmartWeakEvent<EventHandler<EventArgs2>> fswe = new FastSmartWeakEvent<EventHandler<EventArgs2>>();
-				void eh(object sender, EventArgs2 e) => Console.WriteLine(e.Num.ToString());
-				fswe.Add(eh);
-				// this call is problematic because Raise isn't typesafe 
-				// FastSmartWeakEvent will do a runtime check. It's possible to remove that check to improve
-				// performance, but that would blow a hole into the .NET type system if anyone calls Raise with
-				// an EventArgs instance not compatible with the delegate signature.
-				fswe.Raise(null, new EventArgs1());
-
-				Console.WriteLine("No exception -> we blew a hole into the .NET type system!");
-			}
-			catch (InvalidCastException)
-			{
-				Console.WriteLine("Got exception as expected!");
-			}
-			Console.WriteLine();
 		}
 
 		static void TestCollectingListener()
@@ -97,6 +70,20 @@ namespace SmartWeakEvent
 				GC.WaitForPendingFinalizers();
 				source.RaiseEvent();
 			}
+
+			Console.WriteLine("With fast (2013 version):");
+
+			{
+				FastSmartEventSource2013 source = new FastSmartEventSource2013();
+				EventListener r = new EventListener(source);
+				r.Attach();
+				source.RaiseEvent();
+				GC.KeepAlive(r);
+				r = null;
+				GC.Collect();
+				GC.WaitForPendingFinalizers();
+				source.RaiseEvent();
+			}
 			Console.WriteLine();
 		}
 
@@ -119,6 +106,26 @@ namespace SmartWeakEvent
 			}
 			Console.WriteLine();
 		}
+
+		static void TestAttachAnonymousMethod2013()
+		{
+			Console.WriteLine("TestAttachAnonymousMethod2013");
+			try
+			{
+				FastSmartEventSource2013 source = new FastSmartEventSource2013();
+				string text = "Hi";
+				source.Event += delegate
+				{
+					Console.WriteLine(text);
+				};
+				Console.WriteLine("Attaching an anonymous method that captures local variables should result in an exception!");
+			}
+			catch (Exception ex)
+			{
+				Console.WriteLine("Got expected exception: " + ex.Message);
+			}
+			Console.WriteLine();
+		}
 	}
 
 	[MemoryDiagnoser]
@@ -127,6 +134,8 @@ namespace SmartWeakEvent
 		NormalEventSource normalSource;
 		SmartEventSource smartSource;
 		FastSmartEventSource fastSmartSource;
+
+		FastSmartEventSource2013 fastSmartSource2013;
 
 		WeakEvent.WeakEventSource<EventArgs> thomasSource;
 
@@ -144,6 +153,10 @@ namespace SmartWeakEvent
 			fastSmartSource = new FastSmartEventSource();
 			fastSmartSource.Event += StaticOnEvent;
 			fastSmartSource.Event += OnEvent;
+
+			fastSmartSource2013 = new FastSmartEventSource2013();
+			fastSmartSource2013.Event += StaticOnEvent;
+			fastSmartSource2013.Event += OnEvent;
 
 			thomasSource = new WeakEvent.WeakEventSource<EventArgs>();
 			thomasSource.Subscribe(StaticOnEvent);
@@ -164,6 +177,10 @@ namespace SmartWeakEvent
 			fastSmartSource.Event -= StaticOnEvent;
 			fastSmartSource.Event -= OnEvent;
 			fastSmartSource = null;
+
+			fastSmartSource2013.Event -= StaticOnEvent;
+			fastSmartSource2013.Event -= OnEvent;
+			fastSmartSource2013 = null;
 
 			thomasSource.Unsubscribe(StaticOnEvent);
 			thomasSource.Unsubscribe(OnEvent);
@@ -186,6 +203,12 @@ namespace SmartWeakEvent
 		public void FastSmartWeakEvent()
 		{
 			fastSmartSource.RaiseEvent();
+		}
+
+		[Benchmark(Description = "Fast smart weak event (2013 version)")]
+		public void FastSmartWeakEvent2013()
+		{
+			fastSmartSource2013.RaiseEvent();
 		}
 
 		[Benchmark(Description = "Thomas weak event")]
