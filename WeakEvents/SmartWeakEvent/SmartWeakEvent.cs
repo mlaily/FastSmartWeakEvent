@@ -33,7 +33,7 @@ namespace SmartWeakEvent
 	/// </summary>
 	public sealed class SmartWeakEvent<T> where T : class
 	{
-		struct EventEntry
+		readonly struct EventEntry
 		{
 			public readonly MethodInfo TargetMethod;
 			public readonly WeakReference TargetReference;

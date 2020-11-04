@@ -35,7 +35,7 @@ namespace WeakEvents
 		
 		public event EventHandler Event {
 			add {
-				// event is easily made thread-safe is desired
+				// event is easily made thread-safe if desired
 				lock (handlers) {
 					// optionally clean up when adding an event handler to prevent leak
 					// when event is never fired:
@@ -47,9 +47,9 @@ namespace WeakEvents
 			remove {
 				lock (handlers) {
 					handlers.RemoveAll(wr => {
-					                   	EventHandler target = (EventHandler)wr.Target;
-					                   	return target == null || target == value;
-					                   });
+										EventHandler target = (EventHandler)wr.Target;
+										return target == null || target == value;
+									   });
 				}
 			}
 		}
@@ -69,8 +69,7 @@ namespace WeakEvents
 			// Call event handlers using a separate event handler list after removing the dead entries
 			// from the old list to ensure that registering+deregistering events from within an event
 			// handler works as expected.
-			if (callHandlers != null)
-				callHandlers(this, e);
+			callHandlers?.Invoke(this, e);
 		}
 	}
 }

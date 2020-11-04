@@ -35,7 +35,7 @@ namespace SmartWeakEvent
 	/// </summary>
 	public sealed class FastSmartWeakEvent<T> where T : class
 	{
-		struct EventEntry
+		readonly struct EventEntry
 		{
 			public readonly FastSmartWeakEventForwarderProvider.ForwarderDelegate Forwarder;
 			public readonly MethodInfo TargetMethod;

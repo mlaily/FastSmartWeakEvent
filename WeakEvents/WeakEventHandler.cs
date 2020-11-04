@@ -58,12 +58,12 @@ namespace WeakEvents
 			where TEventSource : class where TEventListener : class
 		{
 			if (senderObject == null)
-				throw new ArgumentNullException("senderObject");
+				throw new ArgumentNullException(nameof(senderObject));
 			if (listeningObject == null)
-				throw new ArgumentNullException("listeningObject");
-			VerifyDelegate(registerEvent, "registerEvent");
-			VerifyDelegate(deregisterEvent, "deregisterEvent");
-			VerifyDelegate(forwarderAction, "forwarderAction");
+				throw new ArgumentNullException(nameof(listeningObject));
+			VerifyDelegate(registerEvent, nameof(registerEvent));
+			VerifyDelegate(deregisterEvent, nameof(deregisterEvent));
+			VerifyDelegate(forwarderAction, nameof(forwarderAction));
 			
 			WeakEventHandler weh = new WeakEventHandler(listeningObject);
 			EventHandler eh = weh.MakeDeregisterCodeAndWeakEventHandler(senderObject, deregisterEvent, forwarderAction);
@@ -157,12 +157,12 @@ namespace WeakEvents
 			where TEventSource : class where TEventListener : class
 		{
 			if (senderObject == null)
-				throw new ArgumentNullException("senderObject");
+				throw new ArgumentNullException(nameof(senderObject));
 			if (listeningObject == null)
-				throw new ArgumentNullException("listeningObject");
-			WeakEventHandler.VerifyDelegate(registerEvent, "registerEvent");
-			WeakEventHandler.VerifyDelegate(deregisterEvent, "deregisterEvent");
-			WeakEventHandler.VerifyDelegate(forwarderAction, "forwarderAction");
+				throw new ArgumentNullException(nameof(listeningObject));
+			WeakEventHandler.VerifyDelegate(registerEvent, nameof(registerEvent));
+			WeakEventHandler.VerifyDelegate(deregisterEvent, nameof(deregisterEvent));
+			WeakEventHandler.VerifyDelegate(forwarderAction, nameof(forwarderAction));
 			
 			WeakEventHandler weh = new WeakEventHandler(listeningObject);
 			EventHandler<TEventArgs> eh = MakeDeregisterCodeAndWeakEventHandler(weh, senderObject, deregisterEvent, forwarderAction);
