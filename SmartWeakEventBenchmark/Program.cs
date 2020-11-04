@@ -48,7 +48,8 @@ namespace SmartWeakEvent
 			Console.Write("This should cause an exception: ");
 			try {
 				FastSmartWeakEvent<EventHandler<EventArgs2>> fswe = new FastSmartWeakEvent<EventHandler<EventArgs2>>();
-				fswe.Add((sender, e) => Console.WriteLine(e.Num.ToString()));
+				void eh(object sender, EventArgs2 e) => Console.WriteLine(e.Num.ToString());
+				fswe.Add(eh);
 				// this call is problematic because Raise isn't typesafe 
 				// FastSmartWeakEvent will do a runtime check. It's possible to remove that check to improve
 				// performance, but that would blow a hole into the .NET type system if anyone calls Raise with
