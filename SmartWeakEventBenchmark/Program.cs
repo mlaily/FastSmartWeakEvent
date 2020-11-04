@@ -57,7 +57,7 @@ namespace SmartWeakEvent
 				source.RaiseEvent();
 			}
 
-			Console.WriteLine("With fast:");
+			Console.WriteLine("With fast (2009 version):");
 
 			{
 				FastSmartEventSource source = new FastSmartEventSource();
@@ -89,7 +89,7 @@ namespace SmartWeakEvent
 
 		static void TestAttachAnonymousMethod()
 		{
-			Console.WriteLine("TestAttachAnonymousMethod");
+			Console.WriteLine("TestAttachAnonymousMethod2009");
 			try
 			{
 				FastSmartEventSource source = new FastSmartEventSource();
@@ -199,7 +199,7 @@ namespace SmartWeakEvent
 			smartSource.RaiseEvent();
 		}
 
-		[Benchmark(Description = "Fast smart weak event")]
+		[Benchmark(Description = "Fast smart weak event (2009 version)")]
 		public void FastSmartWeakEvent()
 		{
 			fastSmartSource.RaiseEvent();
