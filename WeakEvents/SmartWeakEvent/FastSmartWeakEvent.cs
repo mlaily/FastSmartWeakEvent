@@ -33,7 +33,7 @@ namespace SmartWeakEvent
 	/// <summary>
 	/// A class for managing a weak event.
 	/// </summary>
-	public sealed class FastSmartWeakEvent<T> where T : class
+	public sealed class FastSmartWeakEvent<T> where T : class, Delegate
 	{
 		readonly struct EventEntry
 		{
@@ -53,8 +53,6 @@ namespace SmartWeakEvent
 		
 		static FastSmartWeakEvent()
 		{
-			if (!typeof(T).IsSubclassOf(typeof(Delegate)))
-				throw new ArgumentException("T must be a delegate type");
 			MethodInfo invoke = typeof(T).GetMethod("Invoke");
 			if (invoke == null || invoke.GetParameters().Length != 2)
 				throw new ArgumentException("T must be a delegate type taking 2 parameters");
@@ -71,11 +69,10 @@ namespace SmartWeakEvent
 		public void Add(T eh)
 		{
 			if (eh != null) {
-				Delegate d = (Delegate)(object)eh;
 				if (eventEntries.Count == eventEntries.Capacity)
 					RemoveDeadEntries();
-				MethodInfo targetMethod = d.Method;
-				object targetInstance = d.Target;
+				MethodInfo targetMethod = eh.Method;
+				object targetInstance = eh.Target;
 				WeakReference target = targetInstance != null ? new WeakReference(targetInstance) : null;
 				eventEntries.Add(new EventEntry(FastSmartWeakEventForwarderProvider.GetForwarder(targetMethod), targetMethod, target));
 			}
@@ -89,9 +86,8 @@ namespace SmartWeakEvent
 		public void Remove(T eh)
 		{
 			if (eh != null) {
-				Delegate d = (Delegate)(object)eh;
-				object targetInstance = d.Target;
-				MethodInfo targetMethod = d.Method;
+				object targetInstance = eh.Target;
+				MethodInfo targetMethod = eh.Method;
 				for (int i = eventEntries.Count - 1; i >= 0; i--) {
 					EventEntry entry = eventEntries[i];
 					if (entry.TargetReference != null) {

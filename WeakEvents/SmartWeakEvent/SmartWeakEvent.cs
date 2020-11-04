@@ -31,7 +31,7 @@ namespace SmartWeakEvent
 	/// <summary>
 	/// A class for managing a weak event.
 	/// </summary>
-	public sealed class SmartWeakEvent<T> where T : class
+	public sealed class SmartWeakEvent<T> where T : class, Delegate
 	{
 		readonly struct EventEntry
 		{
@@ -49,8 +49,6 @@ namespace SmartWeakEvent
 		
 		static SmartWeakEvent()
 		{
-			if (!typeof(T).IsSubclassOf(typeof(Delegate)))
-				throw new ArgumentException("T must be a delegate type");
 			MethodInfo invoke = typeof(T).GetMethod("Invoke");
 			if (invoke == null || invoke.GetParameters().Length != 2)
 				throw new ArgumentException("T must be a delegate type taking 2 parameters");
@@ -67,15 +65,13 @@ namespace SmartWeakEvent
 		public void Add(T eh)
 		{
 			if (eh != null) {
-				Delegate d = (Delegate)(object)eh;
-				
-				if (d.Method.DeclaringType.GetCustomAttributes(typeof(CompilerGeneratedAttribute), false).Length != 0)
+				if (eh.Method.DeclaringType.GetCustomAttributes(typeof(CompilerGeneratedAttribute), false).Length != 0)
 					throw new ArgumentException("Cannot create weak event to anonymous method with closure.");
 				
 				if (eventEntries.Count == eventEntries.Capacity)
 					RemoveDeadEntries();
-				WeakReference target = d.Target != null ? new WeakReference(d.Target) : null;
-				eventEntries.Add(new EventEntry(d.Method, target));
+				WeakReference target = eh.Target != null ? new WeakReference(eh.Target) : null;
+				eventEntries.Add(new EventEntry(eh.Method, target));
 			}
 		}
 		
@@ -87,19 +83,18 @@ namespace SmartWeakEvent
 		public void Remove(T eh)
 		{
 			if (eh != null) {
-				Delegate d = (Delegate)(object)eh;
 				for (int i = eventEntries.Count - 1; i >= 0; i--) {
 					EventEntry entry = eventEntries[i];
 					if (entry.TargetReference != null) {
 						object target = entry.TargetReference.Target;
 						if (target == null) {
 							eventEntries.RemoveAt(i);
-						} else if (target == d.Target && entry.TargetMethod == d.Method) {
+						} else if (target == eh.Target && entry.TargetMethod == eh.Method) {
 							eventEntries.RemoveAt(i);
 							break;
 						}
 					} else {
-						if (d.Target == null && entry.TargetMethod == d.Method) {
+						if (eh.Target == null && entry.TargetMethod == eh.Method) {
 							eventEntries.RemoveAt(i);
 							break;
 						}
