@@ -25,6 +25,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
@@ -226,7 +227,10 @@ namespace SmartWeakEvent2013
 			for (int i = 0; i < parameters.Length; i++) {
 				dynamicMethodParameterTypes[i + 1] = parameters[i].ParameterType;
 			}
-			
+
+			Debug.Assert(getTargetMethod != null);
+			Debug.Assert(calledWhileDeadMethod != null);
+
 			dynamicMethod = new DynamicMethod("FastSmartWeakEvent", typeof(void), dynamicMethodParameterTypes, typeof(HandlerEntry), true);
 			ILGenerator il = dynamicMethod.GetILGenerator();
 			il.Emit(OpCodes.Ldarg_0);
