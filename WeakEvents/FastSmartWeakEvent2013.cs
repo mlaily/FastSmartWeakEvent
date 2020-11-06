@@ -125,15 +125,15 @@ namespace SmartWeakEvent2013
 			if (eh != null) {
 				RemoveDeadEntries();
 				object targetInstance = eh.Target;
-				if (targetInstance != null) {
+				if (targetInstance == null || eh.Method.IsStatic) {
+					// delegate to static method: use directly without wrapping delegate
+					AddToRaiseDelegate(eh);
+				} else {
 					MethodInfo targetMethod = eh.Method;
 					var wd = new HandlerEntry(this, targetInstance, targetMethod);
 					var dynamicMethod = GetInvoker(targetMethod);
 					wd.WrappingDelegate = dynamicMethod.CreateDelegate(typeof(T), wd);
 					AddToRaiseDelegate(wd.WrappingDelegate);
-				} else {
-					// delegate to static method: use directly without wrapping delegate
-					AddToRaiseDelegate(eh);
 				}
 			}
 		}
